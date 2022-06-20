@@ -23,6 +23,7 @@
     "squel": "^5.13.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "sequelize-cli": "^6.4.1"
   }
 }
