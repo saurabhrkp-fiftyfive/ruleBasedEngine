@@ -1,0 +1,118 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+require('dotenv').config({ path: '../.env' }); // Must be the first import
+const debug = require('debug')('rolebasedengine:server');
+const http = require('http');
+const cluster = require('cluster');
+const numCPUs = process.env.NODE_ENV === 'production' ? require('os').cpus().length : 1;
+
+// Port Setup
+let port = normalizePort(process.env.PORT || '5051');
+/**
+ * Checking if cluster is Master and if then fork new workers
+ */
+
+if (cluster.isMaster) {
+  console.log(`Master ${process.pid} is running`);
+
+  /**
+   * Fork workers for every CPU.
+   */
+  Array.from(Array(numCPUs)).map(cluster.fork);
+
+  /**
+   * On Cluster exit, restart on failure.
+   */
+  cluster.on('exit', (worker, code, signal) => {
+    console.log('Worker %d died with code/signal %s. Restarting worker...', worker.process.pid, signal || code);
+    cluster.fork();
+  });
+}
+
+/**
+ * Checking if cluster is not Master and if then starts server
+ */
+
+if (!cluster.isMaster) {
+  /**
+   * Importing Express App
+   */
+  const app = require('../app');
+
+  console.log(`Forked worker ${process.pid}`);
+
+  /**
+   * Get port from environment and store in Express.
+   */
+  app.set('port', port);
+
+  /**
+   * Create HTTP server.
+   */
+
+  const server = http.createServer(app);
+
+  /**
+   * Listen on provided port, on all network interfaces.
+   */
+
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+}
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  const port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  console.log('Listening on ' + port);
+  debug('Listening on ' + port);
+}
