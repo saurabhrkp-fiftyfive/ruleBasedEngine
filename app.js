@@ -6,6 +6,8 @@ const compression = require('compression');
 const helmet = require('helmet');
 const createError = require('http-errors');
 
+// Importing DB models
+const { sequelize } = require('./models');
 // Calling all routes
 const indexRouter = require('./routes/index');
 
@@ -25,8 +27,6 @@ app.use(cors());
 app.use(cookieParser());
 // Parse incoming requests with urlencoded payloads
 app.use(express.urlencoded({ extended: true }));
-// Text parser for Forms
-app.use(express.text());
 // JSON parser for Forms
 app.use(express.json());
 
@@ -37,6 +37,16 @@ if (process.env.NODE_ENV === 'production') {
   /** Compress all routes. */
   app.use(compression());
 }
+
+/** Test DB Connection is OK. */
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection has been established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+})();
 
 // Routes
 app.use('/', indexRouter);

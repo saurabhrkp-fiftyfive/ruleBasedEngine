@@ -3,7 +3,7 @@
 /**
  * Module dependencies.
  */
-require('dotenv').config({ path: '../.env' }); // Must be the first import
+require('dotenv').config(); // Must be the first import
 const debug = require('debug')('rolebasedengine:server');
 const http = require('http');
 const cluster = require('cluster');
