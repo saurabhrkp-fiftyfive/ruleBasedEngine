@@ -4,7 +4,6 @@
  * Module dependencies.
  */
 require('dotenv').config(); // Must be the first import
-const chalk = require('chalk');
 const debug = require('debug')('rolebasedengine:server');
 const http = require('http');
 const cluster = require('cluster');
@@ -52,7 +51,7 @@ function onListening() {
 // Handle uncaught exceptions
 process.on('uncaughtException', (uncaughtExc) => {
   // Won't execute
-  console.log(chalk.bgRed('UNCAUGHT EXCEPTION! 💥 Shutting down...'));
+  console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.log('uncaughtException Err::', uncaughtExc);
   console.log('uncaughtException Stack::', JSON.stringify(uncaughtExc.stack));
   process.exit(1);
@@ -113,8 +112,8 @@ const setUpExpress = () => {
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
-    console.log(chalk.bgRed('UNHANDLED REJECTION! 💥 Shutting down...'));
-    console.log(err.name, err.message);
+    console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+    console.log(err);
     // Close server & exit process
     server.close(() => process.exit(1));
   });

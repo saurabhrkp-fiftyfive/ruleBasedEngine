@@ -1,27 +1,9 @@
-exports.makeExpressCallback = (controller) => {
-  return (req, res) => {
-    const httpRequest = {
-      body: req.body,
-      query: req.query,
-      params: req.params,
-      ip: req.ip,
-      method: req.method,
-      path: req.path,
-      headers: {
-        'Content-Type': req.get('Content-Type'),
-        Referer: req.get('referer'),
-        'User-Agent': req.get('User-Agent')
-      }
-    };
-    (async () => {
-      try {
-        let httpResponse = await controller(httpRequest);
-        if (httpResponse.headers) res.set(httpResponse.headers);
-        res.type('json');
-        res.status(httpResponse.statusCode).send(httpResponse.body);
-      } catch (error) {
-        res.status(500).send({ error: 'An unkown error occurred.' });
-      }
-    })();
-  };
+const createError = require('http-errors');
+
+exports.sendResponse = async (res, status = 200, body = { messsage: 'OK' }) => {
+  return res.status(status).json({ ...body });
+};
+
+exports.sendErrorResponse = async (next, status = 500, error = { messsage: 'NOT OK' }) => {
+  return next(createError(status, error, { expose: true }));
 };
