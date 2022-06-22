@@ -43,9 +43,14 @@ if (process.env.NODE_ENV === 'production') {
   try {
     await sequelize.authenticate();
     console.log('Connection has been established successfully.');
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ force: true });
+      console.log("Drop and re-sync db.");
+    }
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }
+
 })();
 
 // Routes
