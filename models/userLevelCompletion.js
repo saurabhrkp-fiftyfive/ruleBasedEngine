@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const sequelizeConnection = require('./index');
+const mysqlConnection = require('./connectMysql');
 
-const UserLevelCompletion = sequelizeConnection.define('UserLevelCompletion',
+const UserLevelCompletion = mysqlConnection.define('UserLevelCompletion',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     userId: { type: DataTypes.INTEGER, allowNull: false },

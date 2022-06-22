@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const sequelizeConnection = require('./index');
+const mysqlConnection = require('./connectMysql');
 
-const Event = sequelizeConnection.define('Event',
+const Event = mysqlConnection.define('Event',
   {
     jobId: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     eventName: { type: DataTypes.STRING, allowNull: false },

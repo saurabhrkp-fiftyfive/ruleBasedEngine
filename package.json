@@ -17,10 +17,10 @@
     "helmet": "^5.1.0",
     "http-errors": "^2.0.0",
     "morgan": "~1.9.1",
-    "mssql": "^8.1.2",
     "mysql2": "^2.3.3",
     "sequelize": "^6.21.0",
-    "squel": "^5.13.0"
+    "squel": "^5.13.0",
+    "tedious": "^14.6.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.16",

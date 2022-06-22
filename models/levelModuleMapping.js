@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const sequelizeConnection = require('./index');
+const mysqlConnection = require('./connectMysql');
 
-const LevelModuleMapping = sequelizeConnection.define('LevelModuleMapping',
+const LevelModuleMapping = mysqlConnection.define('LevelModuleMapping',
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
     levelId: { type: DataTypes.INTEGER, allowNull: false },
