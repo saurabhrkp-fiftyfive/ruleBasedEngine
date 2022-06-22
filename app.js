@@ -42,7 +42,7 @@ if (process.env.NODE_ENV === 'production') {
 (async () => {
   try {
     require('./models/initialize');
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV !== 'development') {
       await mysqlConnection.sync({ force: true });
       console.log('Drop and re-sync db.');
     }
