@@ -1,13 +1,7 @@
-const { Model, DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  class UserLevelCompletion extends Model {
-    toJSON() {
-      return { ...this.get(), id: undefined };
-    }
-  }
-
-  UserLevelCompletion.init(
+  const UserLevelCompletion = sequelize.define('UserLevelCompletion',
     {
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
       userId: { type: DataTypes.INTEGER, allowNull: false },
@@ -15,15 +9,10 @@ module.exports = (sequelize) => {
       modulesCompletion: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
       completionCriteria: { type: DataTypes.JSON, allowNull: true },
       score: { type: DataTypes.INTEGER, allowNull: true },
-      createdAt: { type: DataTypes.DATE, allowNull: false },
-      updatedAt: { type: DataTypes.DATE, allowNull: false },
       deleteFlag: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
     },
-    {
-      sequelize,
-      tableName: 'user_level_completion',
-      modelName: 'UserLevelCompletion',
-    },
+    { tableName: 'user_level_completion' },
   );
+
   return UserLevelCompletion;
 };
