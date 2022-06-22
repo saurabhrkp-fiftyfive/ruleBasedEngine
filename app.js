@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const createError = require('http-errors');
 
 // Importing DB models
-const { sequelize } = require('./models');
+const sequelizeConnection = require('./models');
 // Calling all routes
 const indexRouter = require('./routes/index');
 
@@ -41,10 +41,9 @@ if (process.env.NODE_ENV === 'production') {
 /** Test DB Connection is OK. */
 (async () => {
   try {
-    await sequelize.authenticate();
-    console.log('Connection has been established successfully.');
+    require('./models/initialize');
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ force: true });
+      await sequelizeConnection.sync({ force: true });
       console.log("Drop and re-sync db.");
     }
   } catch (error) {
