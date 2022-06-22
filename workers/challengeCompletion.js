@@ -1,7 +1,4 @@
 require('dotenv').config();
-
-// Importing DB models
-const sequelizeConnection = require('../models');
 const Event = require('../models/events');
 
 const EVENT_NAME = 'CHALLENGE_COMPLETED';
@@ -13,9 +10,6 @@ const EVENT_NAME = 'CHALLENGE_COMPLETED';
   try {
     let scriptStartedOn = new Date();
     console.log(`Started at ${scriptStartedOn}`);
-    /** Test DB Connection is OK. */
-    await sequelizeConnection.authenticate();
-    console.log('Connection has been established successfully.');
     // Query Event from database
     const event = await Event.findOne({ where: { eventName: EVENT_NAME, status: 'pending' }, order: [['createdAt']] });
     // Check event exsist
