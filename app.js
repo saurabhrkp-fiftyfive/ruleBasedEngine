@@ -9,7 +9,8 @@ const createError = require('http-errors');
 // Importing DB models
 const mysqlConnection = require('./models/connectMysql');
 // Calling all routes
-const indexRouter = require('./routes/index');
+const eventsRouter = require('./routes/events');
+const levelsRouter = require('./routes/levels');
 
 // Creating express app
 const app = express();
@@ -52,11 +53,16 @@ if (process.env.NODE_ENV === 'production') {
 })();
 
 // Routes
-app.use('/', indexRouter);
+// Event handlers
+app.use('/events', eventsRouter);
+// Level Tasks
+app.use('/levels', levelsRouter);
+// default check
+app.use('/', (req, res) => res.send('Silence is golden'));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-  next(createError(404, `Not Found Endpoint: '${req.url}'`));
+  next(createError(404, `Not Found Endpoint: ${req.url}`));
 });
 
 // Error handling from async/await functions
