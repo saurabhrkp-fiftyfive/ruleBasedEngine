@@ -1,6 +1,5 @@
 const { sendResponse, sendErrorResponse } = require('../helpers');
-const DB = require('../models');
-const Event = DB.Event;
+const Event = require('../models/events');
 
 exports.challengeCompletion = async (req, res, next) => {
   try {
