@@ -44,7 +44,7 @@ if (process.env.NODE_ENV === 'production') {
     require('./models/initialize');
     if (process.env.NODE_ENV === 'development') {
       await mysqlConnection.sync({ force: true });
-      console.log("Drop and re-sync db.");
+      console.log('Drop and re-sync db.');
     }
   } catch (error) {
     console.error('Unable to connect to the database:', error);
