@@ -17,7 +17,7 @@ const mssqlConnection = new Sequelize(database, username, password, options);
     await mssqlConnection.authenticate();
     console.log('Connection has been established successfully with MSSQL.');
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('Unable to connect to the MSSQL database:', error);
   }
 })();
 
