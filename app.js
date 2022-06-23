@@ -53,12 +53,11 @@ if (process.env.NODE_ENV === 'production') {
 })();
 
 // Routes
+app.get('/', (req, res) => res.send('Silence is golden'));
 // Event handlers
 app.use('/events', eventsRouter);
 // Level Tasks
 app.use('/levels', levelsRouter);
-// default check
-app.use('/', (req, res) => res.send('Silence is golden'));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
