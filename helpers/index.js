@@ -9,3 +9,12 @@ exports.sendErrorResponse = async (next, status = 500, error = { messsage: 'NOT 
 };
 
 exports.isFalsey = (value) => value === undefined || value === null || (typeof value === "object" && Object.keys(value).length === 0) || (typeof value === "string" && value.trim().length === 0);
+
+exports.objectify = (collection, mapkey) => {
+  let object = {};
+  for (let item of collection) {
+    let key = item[mapkey];
+    object[key] = item;
+  }
+  return object;
+};

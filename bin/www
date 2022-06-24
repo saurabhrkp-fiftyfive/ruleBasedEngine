@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 require('dotenv').config(); // Must be the first import
-const debug = require('debug')('rolebasedengine:server');
+const debug = require('debug')('rulebasedengine:server');
 const http = require('http');
 const cluster = require('cluster');
 const numCores = process.env.NODE_ENV === 'production' ? require('os').cpus().length : 1;
