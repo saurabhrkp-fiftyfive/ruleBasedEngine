@@ -65,9 +65,9 @@ app.use((req, res, next) => {
 });
 
 // Error handling from async/await functions
-app.use((err, req, res, next) => {
-  const { status = 500, message } = err;
-  res.status(status).json(message);
+app.use((error, req, res, next) => {
+  const { status = 500, message } = error;
+  res.status(status).json({ message });
 });
 
 module.exports = app;
