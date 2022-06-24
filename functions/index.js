@@ -114,11 +114,10 @@ exports.getLevelDetails = async (mysqlConnection, levelIds) => {
  * @param {Array} moduleIds
  */
 exports.getUserCompletionsData = async (mysqlConnection, mssqlConnection, userIds, moduleIds) => {
-  const moduleAccess = await getModuleAccess(mssqlConnection, userIds, moduleIds);
-  const userChallengesAttempt = await getUserChallengesCompletion(mysqlConnection, userIds, moduleIds);
-  const moduleAccessCollection = objectify(moduleAccess, 'key');
-  const userChallengesAttemptCollection = objectify(userChallengesAttempt, 'key');
-  const userCompletions = getUserCompletions(moduleAccessCollection, userChallengesAttemptCollection);
+  const moduleAccessCollection = await getModuleAccess(mssqlConnection, userIds, moduleIds);
+  const moduleScoresCollection = await getUserScores(mssqlConnection, userIds, moduleIds);
+  const userChallengesAttemptCollection = await getUserChallengesCompletion(mysqlConnection, userIds, moduleIds);
+  const userCompletions = getUserCompletions(moduleAccessCollection, userChallengesAttemptCollection, moduleScoresCollection);
   return userCompletions;
 };
 
@@ -142,7 +141,8 @@ const getModuleAccess = async (mssqlConnection, userIds, moduleIds) => {
     .group(`MCCU.ModuleID`).group(`UD.UserID`);
 
   const moduleAccess = await mssqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  return moduleAccess;
+  const moduleAccessCollection = objectify(moduleAccess, 'key');
+  return moduleAccessCollection;
 };
 
 /**
@@ -174,7 +174,37 @@ const getUserChallengesCompletion = async (mysqlConnection, userIds, moduleIds) 
     .group(`CA.user_id`).group(`C.module_id`);
 
   const userChallengesAttempt = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  return userChallengesAttempt;
+  const userChallengesAttemptCollection = objectify(userChallengesAttempt, 'key');
+  return userChallengesAttemptCollection;
+};
+
+/**
+ * Get Module Access Completion Date
+ * @param {Sequelize} mssqlConnection
+ * @param {Array} userIds
+ * @param {Array} moduleIds
+ */
+const getUserScores = async (mssqlConnection, userIds, moduleIds) => {
+  let mainQuery = squelMssql.select()
+    .field(`CONCAT(Scores.UserID,'_',Scores.Module_id) AS 'key'`)
+    .field(`SUM(Scores.score) AS score`);
+
+  let subQuery = squelMssql.select()
+    .field(`UD.UserID`)
+    .field(`S.Challenge_id`)
+    .field(`S.Module_id`)
+    .field(`MAX(S.Score) AS score`)
+    .from(`Tbl_Userdetail AS UD`)
+    .join(squelMssql.select().from(`Tbl_Score`), `S`, `S.User_email = UD.User_Email`)
+    .where(`S.Module_id IN ?`, moduleIds).where(`UD.UserID IN ?`, userIds)
+    .group(`S.User_email`).group(`S.Challenge_id`)
+    .group(`S.Module_id`).group(`UD.UserID`);
+
+  mainQuery.from(`(${subQuery.toString()}) AS Scores`).group(`Scores.Module_id`).group(`Scores.UserID`);
+
+  const moduleScores = await mssqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
+  const moduleScoresCollection = objectify(moduleScores, 'key');
+  return moduleScoresCollection;
 };
 
 /**
@@ -182,19 +212,24 @@ const getUserChallengesCompletion = async (mysqlConnection, userIds, moduleIds) 
  * @param {Object} modulesAttempt
  * @param {Object} challengesAttempt
  */
-const getUserCompletions = (modulesAttempt, challengesAttempt) => {
+const getUserCompletions = (modulesAttempt, challengesAttempt, moduleScores) => {
   let totalChallengesCompleted = 0;
   let totalChallengesLaunched = 0;
-  let moduleCompletion = {};
+  let totalScore = 0;
+  let moduleCompletion = [];
 
   for (const key in modulesAttempt) {
     const { moduleId, challenges_launched } = modulesAttempt[key];
     let challenges_completed = challengesAttempt.hasOwnProperty(key) ? challengesAttempt[key].challenges_completed : 0;
-    if (!moduleCompletion.hasOwnProperty(moduleId)) moduleCompletion[moduleId] = { challenges_launched, challenges_completed };
+    let moduleScore = moduleScores.hasOwnProperty(key) ? moduleScores[key].score : 0;
+    let moduleCompleted = challenges_launched === challenges_completed;
+    moduleCompletion.push({ moduleId, challenges_launched, challenges_completed, moduleScore, moduleCompleted });
     totalChallengesCompleted += challenges_completed;
     totalChallengesLaunched += challenges_launched;
+    totalScore += moduleScore;
   }
-
-  let userCompletions = { moduleCompletion, totalChallengesCompleted, totalChallengesLaunched };
+  let overAllChallengesCompletion = Math.round((totalChallengesCompleted / totalChallengesLaunched) * 100);
+  let modulesCompleted = moduleCompletion.filter((row) => { return row.moduleCompleted === true; }).map((row) => row.moduleId);
+  let userCompletions = { moduleCompletion, modulesCompleted, totalScore, overAllChallengesCompletion, totalChallengesCompleted, totalChallengesLaunched };
   return userCompletions;
 };
