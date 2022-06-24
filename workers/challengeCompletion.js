@@ -1,9 +1,7 @@
 require('dotenv').config();
-const squel = require('squel');
-const { QueryTypes } = require('sequelize');
-const squelMssql = squel.useFlavour('mssql');
 const mysqlConnection = require('../models/connectMysql');
 const mssqlConnection = require('../models/connectMssql');
+const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, getAllModuleInLevel, getLevelDetails, getUserCompletionsData } = require('../functions');
 
 /**
  * 5. Worker to check if update required, check criteria 6 Hours
@@ -24,28 +22,28 @@ const mssqlConnection = require('../models/connectMssql');
   try {
     const event = {
       jobId: 'e25332a2-fc26-4382-9578-c60671694e9f', status: 'pending', eventName: 'CHALLENGE_COMPLETED',
-      eventMessage: { user_id: 108835, timespent: 111, challenge_id: 32604, completion: 'success', score: 120 }
+      eventMessage: { user_id: 108835, timespent: 60, challenge_id: 31138, completion: 'success', score: 120 }
     };
-
-    const { challenge_id } = event.eventMessage;
+    const { user_id, challenge_id, completion, score } = event.eventMessage;
+    if (completion === 'success') console.log(`Challenge ${challenge_id} completed successfully with score ${score} by ${user_id}`);
     // Query Event from database
-    let mainQuery = squel.select()
-      .field(`module_id`)
-      .from(`challenges`)
-      .where(`id = ?`, challenge_id).limit(1);
-
-    const challengeModule = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-
-    let module_id = null;
-
-    if (challengeModule.length === 0) {
-      console.log(`Module_id not found for ${challenge_id}.`);
-    } else {
-      module_id = challengeModule[0].module_id;
+    const userDemographicKey = await getUserCompanyDemographicKey(mysqlConnection, [user_id]);
+    const userLevelsByDemographicKey = await getUserLevelsByDemographicKey(mysqlConnection, userDemographicKey);
+    console.log({ userLevelsByDemographicKey });
+    const challengeModuleLevel = await getModuleLevelByChallenge(mysqlConnection, [challenge_id]);
+    if (challengeModuleLevel.length > 0) {
+      console.log({ challengeModuleLevel });
+      const { levelId } = challengeModuleLevel[0];
+      const levelDetails = await getLevelDetails(mysqlConnection, [levelId]);
+      console.log({ levelDetails });
+      const { levelCriteria } = levelDetails[0];
+      console.log({ levelCriteria });
+      const allModuleInLevel = await getAllModuleInLevel(mysqlConnection, [levelId]);
+      console.log({ allModuleInLevel });
+      const moduleIds = allModuleInLevel.map((row) => row.moduleId);
+      console.log({ moduleIds });
+      await getUserCompletionsData(mysqlConnection, mssqlConnection, [user_id], moduleIds);
     }
-
-    console.log({ module_id });
-
     process.exit();
   } catch (error) {
     console.error(error);
