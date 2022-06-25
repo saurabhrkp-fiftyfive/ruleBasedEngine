@@ -1,7 +1,8 @@
 require('dotenv').config();
 const mysqlConnection = require('../models/connectMysql');
 const mssqlConnection = require('../models/connectMssql');
-const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, getAllModuleInLevel, getLevelDetails, getUserCompletionsData } = require('../functions');
+const UserLevelCompletion = require('../models/userLevelCompletion');
+const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, updateUserLevelCompletion, getAllModuleInLevel, getLevelDetails, getUserCompletionsData } = require('../functions');
 
 /**
  * 5. Worker to check if update required, check criteria 6 Hours
@@ -31,34 +32,34 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
     const userLevelsByDemographicKey = await getUserLevelsByDemographicKey(mysqlConnection, userDemographicKey);
     console.log({ userLevelsByDemographicKey });
     const challengeModuleLevel = await getModuleLevelByChallenge(mysqlConnection, [challenge_id]);
-    if (challengeModuleLevel.length > 0) {
-      console.log({ challengeModuleLevel });
-      const { levelId } = challengeModuleLevel[0];
-      const levelDetails = await getLevelDetails(mysqlConnection, [levelId]);
-      console.log({ levelDetails });
-      const { levelCriteria } = levelDetails[0];
-      console.log({ levelCriteria });
-      const allModuleInLevel = await getAllModuleInLevel(mysqlConnection, [levelId]);
-      console.log({ allModuleInLevel });
-      const moduleIds = allModuleInLevel.map((row) => row.moduleId);
-      console.log({ moduleIds });
-      const userCompletions = await getUserCompletionsData(mysqlConnection, mssqlConnection, [user_id], moduleIds);
-      console.log({ userCompletions });
-      const { moduleCompletion, overAllChallengesCompletion, modulesCompleted, totalChallengesCompleted, totalChallengesLaunched } = userCompletions;
-      console.log({ moduleCompletion, overAllChallengesCompletion, modulesCompleted, totalChallengesCompleted, totalChallengesLaunched });
-      const { mandatoryModuleCompletion, completionPercentage } = levelCriteria;
-      console.log({ mandatoryModuleCompletion, completionPercentage });
-      let mandatoryModulesCompleted = true;
-      if (mandatoryModuleCompletion) {
-        mandatoryModulesCompleted = false;
-        const mandatoryModuleIds = allModuleInLevel.filter((row) => { return row.mandatory === 1; }).map((row) => row.moduleId);
-        console.log({ mandatoryModuleIds });
-        mandatoryModulesCompleted = moduleCompletion.filter(row => { return mandatoryModuleIds.includes(row.moduleId); }).every((row) => row.moduleCompleted === true);
-      }
-      console.log({ mandatoryModulesCompleted });
-      const completionPercentageMet = overAllChallengesCompletion >= completionPercentage;
-      console.log({ completionPercentageMet });
+    console.log({ challengeModuleLevel });
+    const { levelId } = challengeModuleLevel[0];
+    const levelDetails = await getLevelDetails(mysqlConnection, [levelId]);
+    console.log({ levelDetails });
+    const { levelCriteria } = levelDetails[0];
+    console.log({ levelCriteria });
+    const allModuleInLevel = await getAllModuleInLevel(mysqlConnection, [levelId]);
+    console.log({ allModuleInLevel });
+    const moduleIds = allModuleInLevel.map((row) => row.moduleId);
+    console.log({ moduleIds });
+    const userCompletions = await getUserCompletionsData(mysqlConnection, mssqlConnection, [user_id], moduleIds);
+    console.log({ userCompletions });
+    const { moduleCompletion, overAllChallengesCompletion, modulesCompleted, totalChallengesCompleted, totalChallengesLaunched, totalScore } = userCompletions;
+    console.log({ moduleCompletion, overAllChallengesCompletion, modulesCompleted, totalChallengesCompleted, totalChallengesLaunched, totalScore });
+    const { mandatoryModuleCompletion, completionPercentage } = levelCriteria;
+    console.log({ mandatoryModuleCompletion, completionPercentage });
+    let mandatoryModulesCompleted = true;
+    if (mandatoryModuleCompletion) {
+      mandatoryModulesCompleted = false;
+      const mandatoryModuleIds = allModuleInLevel.filter((row) => { return row.mandatory === 1; }).map((row) => row.moduleId);
+      console.log({ mandatoryModuleIds });
+      mandatoryModulesCompleted = moduleCompletion.filter(row => { return mandatoryModuleIds.includes(row.moduleId); }).every((row) => row.moduleCompleted === true);
     }
+    console.log({ mandatoryModulesCompleted });
+    const completionPercentageMet = overAllChallengesCompletion >= completionPercentage;
+    console.log({ completionPercentageMet });
+    let completions = { modulesCompleted, totalScore, overAllChallengesCompletion, totalChallengesCompleted, totalChallengesLaunched };
+    await updateUserLevelCompletion(UserLevelCompletion, user_id, levelId, completions);
     process.exit();
   } catch (error) {
     console.error(error);
