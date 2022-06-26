@@ -1,7 +1,8 @@
 require('dotenv').config();
 const mysqlConnection = require('../models/connectMysql');
 const mssqlConnection = require('../models/connectMssql');
-const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, updateUserLevelCompletion, getAllModuleInLevel, getLevelDetails, getUserCompletionsData } = require('../functions');
+const { launchModules } = require('../functions/modules');
+const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, updateUserLevelCompletion, getAllModuleInLevel, getLevelDetails, getUserCompletionsData, updateUserLevel } = require('../functions');
 
 /**
  * 5. Worker to check if update required, check criteria 6 Hours
@@ -28,8 +29,9 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
     if (completion === 'success') console.log(`Challenge ${challenge_id} completed successfully with score ${score} by ${user_id}`);
     // Get user's company and then company's demographic key and then user's demographic key-value
     const userDemographicKey = await getUserCompanyDemographicKey(mysqlConnection, [user_id]);
+    const { demographic_key, userEmail, companyId } = userDemographicKey[0];
     // Get all levels with order by user's demographic key-value
-    const userLevelsByDemographicKey = await getUserLevelsByDemographicKey(mysqlConnection, userDemographicKey);
+    const userLevelsByDemographicKey = await getUserLevelsByDemographicKey(mysqlConnection, companyId, demographic_key);
     console.log({ userLevelsByDemographicKey });
     // Get current module and level of this challenge Job
     const challengeModuleLevel = await getModuleLevelByChallenge(mysqlConnection, [challenge_id]);
@@ -75,14 +77,26 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
     await updateUserLevelCompletion(mysqlConnection, user_id, levelId, completions);
     // If user has completed current level by criteria
     if (completionPercentageMet && mandatoryModulesCompleted) {
+      console.log(`Level Completion Criteria met`);
       // Get current level and its order from level details
-
+      const currentlevel = userLevelsByDemographicKey.find((row) => row.levelId === levelId);
+      console.log({ currentlevel });
+      const currentlevelOrder = currentlevel.order;
       // Then fetch next level by order
+      const nextLevelByOrder = userLevelsByDemographicKey.find((row) => row.order === currentlevelOrder + 1);
+      let nextLevelId = nextLevelByOrder.levelId;
       // Check if user is already upgraded to next level
-      // Get next level criteria
+      await updateUserLevel(mysqlConnection, user_id, levelId);
+      await updateUserLevel(mysqlConnection, user_id, nextLevelId);
       // Get all modules in next level
+      const allModuleInNextLevel = await getAllModuleInLevel(mysqlConnection, [nextLevelId]);
+      console.log({ allModuleInNextLevel });
+      // Get module Id to launch
+      const moduleIdsToLaunch = allModuleInNextLevel.map((module) => module.moduleId);
       // Launch all modules to user
+      await launchModules(companyId, moduleIdsToLaunch, [userEmail]);
     }
+    console.log(`Completed Job`);
     process.exit();
   } catch (error) {
     console.error(error);
