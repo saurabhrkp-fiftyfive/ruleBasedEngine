@@ -23,6 +23,8 @@ exports.getUserCompanyDemographicKey = async (mysqlConnection, userIds) => {
 
   let userQuery = squel.select()
     .field(`TRIM(UPPER(U.${rule_demographic_key})) AS demographic_key`)
+    .field(`U.comp_id AS companyId`)
+    .field(`U.email AS userEmail`)
     .from(`users AS U`).where(`U.id in ?`, userIds)
     .group(`U.${rule_demographic_key}`);
 
@@ -30,25 +32,26 @@ exports.getUserCompanyDemographicKey = async (mysqlConnection, userIds) => {
   console.log({ userDemographicKey });
   if (userDemographicKey.length === 0) return false;
 
-  return userDemographicKey[0].demographic_key;
+  return userDemographicKey;
 };
 
 /**
  * Get User, Levels, Demographic Key
  * @param {Sequelize} mysqlConnection
+ * @param {Number} companyId
  * @param {String} demographicKey
  */
-exports.getUserLevelsByDemographicKey = async (mysqlConnection, demographicKey) => {
+exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demographicKey) => {
   let mainQuery = squel.select()
     .field(`DKL.levelId`)
     .field(`DKL.order`)
     .from(`demographic_key_levels AS DKL`)
+    .where(`DKL.companyId = ?`, companyId)
     .where(`DKL.demographicKey = ?`, demographicKey)
-    .where(`DKL.deleteFlag = ?`, 0);
+    .where(`DKL.deleteFlag = ?`, 0)
+    .order(`DKL.order`);
 
   const userLevelsByDemographicKey = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  console.log({ userLevelsByDemographicKey });
-
   return userLevelsByDemographicKey;
 };
 
@@ -149,8 +152,31 @@ exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, com
 
     result = await mysqlConnection.query(insertQuery.toString(), { type: QueryTypes.INSERT });
   }
-  console.log({ result });
-  return result;
+  return;
+};
+
+/**
+ * Update User Level
+ * @param {Sequelize} mysqlConnection
+ * @param {Number} userId
+ * @param {Number} levelId
+ */
+exports.updateUserLevel = async (mysqlConnection, userId, levelId) => {
+  let findLevelQuery = squel.select().field(`id`).from(`user_levels`)
+    .where(`userId = ?`, userId).where(`levelId = ?`, levelId).where(`deleteFlag = ?`, 0);
+
+  const updateLevelRow = await mysqlConnection.query(findLevelQuery.toString(), { type: QueryTypes.SELECT });
+  console.log({ updateLevelRow });
+
+  if (updateLevelRow.length === 0) {
+    let insertLevelQuery = squel.insert().into(`user_levels`)
+      .set(`userId`, userId).set(`levelId`, levelId)
+      .set(`createdAt`, `NOW()`, { dontQuote: true })
+      .set(`updatedAt`, `NOW()`, { dontQuote: true });
+
+    await mysqlConnection.query(insertLevelQuery.toString(), { type: QueryTypes.INSERT });
+  }
+  return;
 };
 
 /**
