@@ -1,4 +1,4 @@
-const { QueryTypes, Sequelize, ModelCtor, Model } = require('sequelize');
+const { QueryTypes, Sequelize } = require('sequelize');
 const squel = require('squel');
 const squelMssql = squel.useFlavour('mssql');
 const { objectify } = require('../helpers');
@@ -108,25 +108,46 @@ exports.getLevelDetails = async (mysqlConnection, levelIds) => {
 
 /**
  * Update User Level
- * @param {ModelCtor<Model<any, any>>} UserLevelCompletion
+ * @param {Sequelize} mysqlConnection
  * @param {Number} userId
  * @param {Number} levelId
  * @param {Object} completions
  */
-exports.updateUserLevelCompletion = async (UserLevelCompletion, userId, levelId, completions) => {
-  const { modulesCompleted, totalScore: score, overAllChallengesCompletion: modulesCompletion, totalChallengesCompleted, totalChallengesLaunched } = completions;
-  const completionCriteria = { modulesCompleted, totalChallengesCompleted, totalChallengesLaunched };
-  let updateData = { modulesCompletion, completionCriteria, score };
+exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, completions) => {
+  let findQuery = squel.select()
+    .field(`id`)
+    .from(`user_level_completion`)
+    .where(`userId = ?`, userId)
+    .where(`levelId = ?`, levelId)
+    .where(`deleteFlag = ?`, 0);
 
-  const updateRow = await UserLevelCompletion.findAll({ where: { userId, levelId, deleteFlag: false } });
+  let { modulesCompleted, totalScore, overAllChallengesCompletion, totalChallengesCompleted, totalChallengesLaunched } = completions;
+  const completionCriteria = { modulesCompleted, totalChallengesCompleted, totalChallengesLaunched };
+
+  const updateRow = await mysqlConnection.query(findQuery.toString(), { type: QueryTypes.SELECT });
   console.log({ updateRow });
 
   let result;
   if (updateRow.length > 0) {
-    result = await UserLevelCompletion.update(updateData, { where: { userId, levelId, deleteFlag: false } });
+    let updateQuery = squel.update().table(`user_level_completion`)
+      .set(`modulesCompletion`, overAllChallengesCompletion)
+      .set(`completionCriteria`, JSON.stringify(completionCriteria))
+      .set(`score`, totalScore)
+      .set(`updatedAt`, `NOW()`, { dontQuote: true });
+
+    result = await mysqlConnection.query(updateQuery.toString(), { type: QueryTypes.UPDATE });
   } else {
-    updateData = { ...updateData, userId, levelId };
-    result = await UserLevelCompletion.create(updateData);
+    let insertQuery = squel.insert()
+      .into(`user_level_completion`)
+      .set(`modulesCompletion`, overAllChallengesCompletion)
+      .set(`completionCriteria`, JSON.stringify(completionCriteria))
+      .set(`score`, totalScore)
+      .set(`userId`, userId)
+      .set(`levelId`, levelId)
+      .set(`createdAt`, `NOW()`, { dontQuote: true })
+      .set(`updatedAt`, `NOW()`, { dontQuote: true });
+
+    result = await mysqlConnection.query(insertQuery.toString(), { type: QueryTypes.INSERT });
   }
   console.log({ result });
   return result;
