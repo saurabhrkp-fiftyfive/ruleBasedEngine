@@ -28,8 +28,8 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
     const { user_id, challenge_id, completion, score } = event.eventMessage;
     if (completion === 'success') console.log(`Challenge ${challenge_id} completed successfully with score ${score} by ${user_id}`);
     // Get user's company and then company's demographic key and then user's demographic key-value
-    const userDemographicKey = await getUserCompanyDemographicKey(mysqlConnection, [user_id]);
-    const { demographic_key, userEmail, companyId } = userDemographicKey[0];
+    const userDemographicKey = await getUserCompanyDemographicKey(mysqlConnection, user_id);
+    const { demographic_key, userEmail, companyId } = userDemographicKey;
     // Get all levels with order by user's demographic key-value
     const userLevelsByDemographicKey = await getUserLevelsByDemographicKey(mysqlConnection, companyId, demographic_key);
     console.log({ userLevelsByDemographicKey });
@@ -37,12 +37,12 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
     const challengeModuleLevel = await getModuleLevelByChallenge(mysqlConnection, [challenge_id]);
     console.log({ challengeModuleLevel });
     // Get module level
-    const { levelId } = challengeModuleLevel[0];
+    const { levelId } = challengeModuleLevel;
     // Get level details and criteria
     const levelDetails = await getLevelDetails(mysqlConnection, [levelId]);
     console.log({ levelDetails });
     // Get criteria details
-    const { levelCriteria } = levelDetails[0];
+    const { levelCriteria } = levelDetails;
     console.log({ levelCriteria });
     // Get all modules in level with mandatory status
     const allModuleInLevel = await getAllModuleInLevel(mysqlConnection, [levelId]);

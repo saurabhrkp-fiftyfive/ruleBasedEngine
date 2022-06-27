@@ -1,38 +1,39 @@
 const { QueryTypes, Sequelize } = require('sequelize');
 const squel = require('squel');
 const squelMssql = squel.useFlavour('mssql');
-const { objectify } = require('../helpers');
+const { isFalsey, objectify } = require('../helpers');
 
 /**
  * Get User, Company, Demographic Key
  * @param {Sequelize} mysqlConnection
- * @param {Array} userIds
+ * @param {Number} userId
  */
-exports.getUserCompanyDemographicKey = async (mysqlConnection, userIds) => {
+exports.getUserCompanyDemographicKey = async (mysqlConnection, userId) => {
+  if (isFalsey(userId)) return Promise.reject(`Passed - UserIds: ${userId}`);
   let mainQuery = squel.select()
     .field(`U.id AS userId`)
     .field(`FT.rule_demographic_key`)
+    .field(`U.comp_id`)
     .from(`users AS U`)
     .join(`feature_toggles AS FT ON FT.client_id = U.comp_id`)
-    .where(`U.id IN ?`, userIds);
+    .where(`U.id = ?`, userId);
 
   const userCompanyDemographicKey = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  console.log({ userCompanyDemographicKey });
-  if (userCompanyDemographicKey.length === 0) return false;
-  const { rule_demographic_key } = userCompanyDemographicKey[0];
+  if (isFalsey(userCompanyDemographicKey)) return Promise.reject(`User Not Found with id: ${userId}`);
+
+  const { rule_demographic_key, comp_id } = userCompanyDemographicKey[0];
+  if (isFalsey(rule_demographic_key)) return Promise.reject(`Rule Not Found for companyId: ${comp_id}`);
 
   let userQuery = squel.select()
     .field(`TRIM(UPPER(U.${rule_demographic_key})) AS demographic_key`)
     .field(`U.comp_id AS companyId`)
     .field(`U.email AS userEmail`)
-    .from(`users AS U`).where(`U.id in ?`, userIds)
+    .from(`users AS U`).where(`U.id = ?`, userId)
     .group(`U.${rule_demographic_key}`);
 
   const userDemographicKey = await mysqlConnection.query(userQuery.toString(), { type: QueryTypes.SELECT });
-  console.log({ userDemographicKey });
-  if (userDemographicKey.length === 0) return false;
-
-  return userDemographicKey;
+  if (isFalsey(userDemographicKey)) return Promise.reject(`User ${rule_demographic_key} Not Found for companyId: ${comp_id}`);
+  return userDemographicKey[0];
 };
 
 /**
@@ -42,6 +43,7 @@ exports.getUserCompanyDemographicKey = async (mysqlConnection, userIds) => {
  * @param {String} demographicKey
  */
 exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demographicKey) => {
+  if (isFalsey(companyId) || isFalsey(demographicKey)) return Promise.reject(`Passed - CompanyId: ${companyId}, demographicKey: ${demographicKey}`);
   let mainQuery = squel.select()
     .field(`DKL.levelId`)
     .field(`DKL.order`)
@@ -52,7 +54,8 @@ exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demog
     .order(`DKL.order`);
 
   const userLevelsByDemographicKey = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  return userLevelsByDemographicKey;
+  if (isFalsey(userLevelsByDemographicKey)) return Promise.reject(`Level not found for ${demographicKey} in companyId: ${companyId}`);
+  return userLevelsByDemographicKey[0];
 };
 
 /**
@@ -61,6 +64,7 @@ exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demog
  * @param {Array} challengeIds
  */
 exports.getModuleLevelByChallenge = async (mysqlConnection, challengeIds) => {
+  if (isFalsey(challengeIds)) return Promise.reject(`Passed - ChallengeIds: ${challengeIds}`);
   let mainQuery = squel.select()
     .field(`LMM.moduleId`)
     .field(`LMM.levelId`)
@@ -70,7 +74,8 @@ exports.getModuleLevelByChallenge = async (mysqlConnection, challengeIds) => {
     .group(`LMM.moduleId, LMM.levelId`);
 
   const challengeModuleLevel = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  return challengeModuleLevel;
+  if (isFalsey(challengeModuleLevel)) return Promise.reject(`Module Level Mapping not found for challenge: ${challengeIds.toString()}`);
+  return challengeModuleLevel[0];
 };
 
 /**
@@ -79,6 +84,7 @@ exports.getModuleLevelByChallenge = async (mysqlConnection, challengeIds) => {
  * @param {Array} levelIds
  */
 exports.getAllModuleInLevel = async (mysqlConnection, levelIds) => {
+  if (isFalsey(levelIds)) return Promise.reject(`Passed - LevelIds: ${levelIds}`);
   let mainQuery = squel.select()
     .field(`moduleId`)
     .field(`levelId`)
@@ -88,6 +94,7 @@ exports.getAllModuleInLevel = async (mysqlConnection, levelIds) => {
     .where(`deleteFlag = ?`, 0);
 
   const allModuleInLevel = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
+  if (isFalsey(allModuleInLevel)) return Promise.reject(`Module Level Mapping not found for levelIds: ${levelIds.toString()}`);
   return allModuleInLevel;
 };
 
@@ -97,6 +104,7 @@ exports.getAllModuleInLevel = async (mysqlConnection, levelIds) => {
  * @param {Array} levelIds
  */
 exports.getLevelDetails = async (mysqlConnection, levelIds) => {
+  if (isFalsey(levelIds)) return Promise.reject(`Passed - LevelIds: ${levelIds}`);
   let mainQuery = squel.select()
     .field(`id AS levelId`)
     .field(`name AS levelName`)
@@ -106,7 +114,8 @@ exports.getLevelDetails = async (mysqlConnection, levelIds) => {
     .where(`deleteFlag = ?`, 0);
 
   const levelDetails = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
-  return levelDetails;
+  if (isFalsey(levelDetails)) return Promise.reject(`Level not found for levelIds: ${levelIds.toString()}`);
+  return levelDetails[0];
 };
 
 /**
@@ -117,6 +126,7 @@ exports.getLevelDetails = async (mysqlConnection, levelIds) => {
  * @param {Object} completions
  */
 exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, completions) => {
+  if (isFalsey(userId) || isFalsey(levelId)) return Promise.reject(`Passed - UserId: ${userId}, LevelId: ${levelId}`);
   let findQuery = squel.select()
     .field(`id`)
     .from(`user_level_completion`)
@@ -128,9 +138,7 @@ exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, com
   const completionCriteria = { modulesCompleted, totalChallengesCompleted, totalChallengesLaunched };
 
   const updateRow = await mysqlConnection.query(findQuery.toString(), { type: QueryTypes.SELECT });
-  console.log({ updateRow });
 
-  let result;
   if (updateRow.length > 0) {
     let updateQuery = squel.update().table(`user_level_completion`)
       .set(`modulesCompletion`, overAllChallengesCompletion)
@@ -138,7 +146,7 @@ exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, com
       .set(`score`, totalScore)
       .set(`updatedAt`, `NOW()`, { dontQuote: true });
 
-    result = await mysqlConnection.query(updateQuery.toString(), { type: QueryTypes.UPDATE });
+    await mysqlConnection.query(updateQuery.toString(), { type: QueryTypes.UPDATE });
   } else {
     let insertQuery = squel.insert()
       .into(`user_level_completion`)
@@ -150,7 +158,7 @@ exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, com
       .set(`createdAt`, `NOW()`, { dontQuote: true })
       .set(`updatedAt`, `NOW()`, { dontQuote: true });
 
-    result = await mysqlConnection.query(insertQuery.toString(), { type: QueryTypes.INSERT });
+    await mysqlConnection.query(insertQuery.toString(), { type: QueryTypes.INSERT });
   }
   return;
 };
@@ -162,11 +170,11 @@ exports.updateUserLevelCompletion = async (mysqlConnection, userId, levelId, com
  * @param {Number} levelId
  */
 exports.updateUserLevel = async (mysqlConnection, userId, levelId) => {
+  if (isFalsey(userId) || isFalsey(levelId)) return Promise.reject(`Passed - UserId: ${userId}, LevelId: ${levelId}`);
   let findLevelQuery = squel.select().field(`id`).from(`user_levels`)
     .where(`userId = ?`, userId).where(`levelId = ?`, levelId).where(`deleteFlag = ?`, 0);
 
   const updateLevelRow = await mysqlConnection.query(findLevelQuery.toString(), { type: QueryTypes.SELECT });
-  console.log({ updateLevelRow });
 
   if (updateLevelRow.length === 0) {
     let insertLevelQuery = squel.insert().into(`user_levels`)
@@ -187,6 +195,7 @@ exports.updateUserLevel = async (mysqlConnection, userId, levelId) => {
  * @param {Array} moduleIds
  */
 exports.getUserCompletionsData = async (mysqlConnection, mssqlConnection, userIds, moduleIds) => {
+  if (isFalsey(userIds) || isFalsey(moduleIds)) return Promise.reject(`Passed - UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   const moduleAccessCollection = await getModuleAccess(mssqlConnection, userIds, moduleIds);
   const moduleScoresCollection = await getUserScores(mssqlConnection, userIds, moduleIds);
   const userChallengesAttemptCollection = await getUserChallengesCompletion(mysqlConnection, userIds, moduleIds);
@@ -201,6 +210,7 @@ exports.getUserCompletionsData = async (mysqlConnection, mssqlConnection, userId
  * @param {Array} moduleIds
  */
 const getModuleAccess = async (mssqlConnection, userIds, moduleIds) => {
+  if (isFalsey(userIds) || isFalsey(moduleIds)) return Promise.reject(`Passed - UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   let mainQuery = squelMssql.select()
     .field(`MCCU.ModuleID AS moduleId`)
     .field(`CONCAT(UD.UserID,'_',MCCU.ModuleID) AS 'key'`)
@@ -214,6 +224,7 @@ const getModuleAccess = async (mssqlConnection, userIds, moduleIds) => {
     .group(`MCCU.ModuleID`).group(`UD.UserID`);
 
   const moduleAccess = await mssqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
+  if (isFalsey(moduleAccess)) return Promise.reject(`No Module Access found for UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   const moduleAccessCollection = objectify(moduleAccess, 'key');
   return moduleAccessCollection;
 };
@@ -225,6 +236,7 @@ const getModuleAccess = async (mssqlConnection, userIds, moduleIds) => {
  * @param {Array} moduleIds
  */
 const getUserChallengesCompletion = async (mysqlConnection, userIds, moduleIds) => {
+  if (isFalsey(userIds) || isFalsey(moduleIds)) return Promise.reject(`Passed - UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   let mainQuery = squel.select()
     .field(`CONCAT(CA.user_id,'_',C.module_id) AS 'key'`)
     .field(`COUNT(CA.challenge_id) AS challenges_completed`)
@@ -247,6 +259,7 @@ const getUserChallengesCompletion = async (mysqlConnection, userIds, moduleIds) 
     .group(`CA.user_id`).group(`C.module_id`);
 
   const userChallengesAttempt = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
+  if (isFalsey(userChallengesAttempt)) return Promise.reject(`No Challenge Attempt found for UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   const userChallengesAttemptCollection = objectify(userChallengesAttempt, 'key');
   return userChallengesAttemptCollection;
 };
@@ -276,6 +289,7 @@ const getUserScores = async (mssqlConnection, userIds, moduleIds) => {
   mainQuery.from(`(${subQuery.toString()}) AS Scores`).group(`Scores.Module_id`).group(`Scores.UserID`);
 
   const moduleScores = await mssqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
+  if (isFalsey(moduleScores)) return Promise.reject(`No Module score found for UserIds: ${userIds}, ModuleIds: ${moduleIds}`);
   const moduleScoresCollection = objectify(moduleScores, 'key');
   return moduleScoresCollection;
 };
