@@ -2,7 +2,11 @@ require('dotenv').config();
 const mysqlConnection = require('../models/connectMysql');
 const mssqlConnection = require('../models/connectMssql');
 const { launchModules } = require('../functions/modules');
-const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge, updateUserLevelCompletion, getAllModuleInLevel, getLevelDetails, getUserCompletionsData, updateUserLevel } = require('../functions');
+const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge } = require('../functions');
+const { getUserCompletionsData } = require('../functions/completions');
+const { getAllModuleInLevel } = require('../functions/moduleLevel');
+const { getLevelDetails } = require('../functions/levels');
+const { updateUserLevelCompletion, updateUserLevel } = require('../functions/userLevels');
 
 /**
  * 5. Worker to check if update required, check criteria 6 Hours
