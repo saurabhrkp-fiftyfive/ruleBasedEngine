@@ -83,18 +83,25 @@ const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLe
       console.log({ currentlevel });
       const currentlevelOrder = currentlevel.order;
       // Then fetch next level by order
-      const nextLevelByOrder = userLevelsByDemographicKey.find((row) => row.order === currentlevelOrder + 1);
+      const nextLevelByOrder = userLevelsByDemographicKey.find((row) => row.order > currentlevelOrder);
+      if (nextLevelByOrder === undefined) {
+        console.log(`No next level, Completed Job`);
+        process.exit();
+      }
+      console.log({ nextLevelByOrder });
       let nextLevelId = nextLevelByOrder.levelId;
       // Check if user is already upgraded to next level
       await updateUserLevel(mysqlConnection, user_id, levelId);
-      await updateUserLevel(mysqlConnection, user_id, nextLevelId);
-      // Get all modules in next level
-      const allModuleInNextLevel = await getAllModuleInLevel(mysqlConnection, [nextLevelId]);
-      console.log({ allModuleInNextLevel });
-      // Get module Id to launch
-      const moduleIdsToLaunch = allModuleInNextLevel.map((module) => module.moduleId);
-      // Launch all modules to user
-      await launchModules(companyId, moduleIdsToLaunch, [userEmail]);
+      const launchModule = await updateUserLevel(mysqlConnection, user_id, nextLevelId);
+      if (launchModule) {
+        // Get all modules in next level
+        const allModuleInNextLevel = await getAllModuleInLevel(mysqlConnection, [nextLevelId]);
+        console.log({ allModuleInNextLevel });
+        // Get module Id to launch
+        const moduleIdsToLaunch = allModuleInNextLevel.map((module) => module.moduleId);
+        // Launch all modules to user
+        await launchModules(companyId, moduleIdsToLaunch, [userEmail]);
+      }
     }
     console.log(`Completed Job`);
     process.exit();

@@ -55,7 +55,7 @@ exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demog
 
   const userLevelsByDemographicKey = await mysqlConnection.query(mainQuery.toString(), { type: QueryTypes.SELECT });
   if (isFalsey(userLevelsByDemographicKey)) return Promise.reject(`Level not found for ${demographicKey} in companyId: ${companyId}`);
-  return userLevelsByDemographicKey[0];
+  return userLevelsByDemographicKey;
 };
 
 /**
@@ -175,6 +175,7 @@ exports.updateUserLevel = async (mysqlConnection, userId, levelId) => {
     .where(`userId = ?`, userId).where(`levelId = ?`, levelId).where(`deleteFlag = ?`, 0);
 
   const updateLevelRow = await mysqlConnection.query(findLevelQuery.toString(), { type: QueryTypes.SELECT });
+  let launchModule = false;
 
   if (updateLevelRow.length === 0) {
     let insertLevelQuery = squel.insert().into(`user_levels`)
@@ -183,8 +184,9 @@ exports.updateUserLevel = async (mysqlConnection, userId, levelId) => {
       .set(`updatedAt`, `NOW()`, { dontQuote: true });
 
     await mysqlConnection.query(insertLevelQuery.toString(), { type: QueryTypes.INSERT });
+    launchModule = true;
   }
-  return;
+  return launchModule;
 };
 
 /**
