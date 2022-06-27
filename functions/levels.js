@@ -6,7 +6,7 @@ const { isFalsey } = require('../helpers');
  * Get Level Details from LevelId
  * @param {Sequelize} mysqlConnection
  * @param {Array} levelIds
- * @return {Promise<{levelId:Number, levelName:String, criteria:Object}>} Level Details
+ * @return {Promise<{levelId:Number, levelName:String, levelCriteria:Object}>} Level Details
  */
 exports.getLevelDetails = async (mysqlConnection, levelIds) => {
   if (isFalsey(levelIds)) return Promise.reject(`Passed - LevelIds: ${levelIds}`);

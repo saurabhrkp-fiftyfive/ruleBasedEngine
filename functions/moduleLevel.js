@@ -6,7 +6,7 @@ const { isFalsey } = require('../helpers');
  * Get Module by Level
  * @param {Sequelize} mysqlConnection
  * @param {Array} levelIds
- * @return {Promise<{moduleId:Number, levelId:Number, mandatory:Number}>} Module with mandatory flag in levels
+ * @return {Promise<{moduleId:Number, levelId:Number, mandatory:Number}[]>} Module with mandatory flag in levels
  */
 exports.getAllModuleInLevel = async (mysqlConnection, levelIds) => {
   if (isFalsey(levelIds)) return Promise.reject(`Passed - LevelIds: ${levelIds}`);

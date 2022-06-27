@@ -41,7 +41,7 @@ exports.getUserCompanyDemographicKey = async (mysqlConnection, userId) => {
  * @param {Sequelize} mysqlConnection
  * @param {Number} companyId
  * @param {String} demographicKey
- * @return {Promise<{levelId:Number, order:Number}>} Level for user demographic key with order
+ * @return {Promise<{levelId:Number, order:Number}[]>} Level for user demographic key with order
  */
 exports.getUserLevelsByDemographicKey = async (mysqlConnection, companyId, demographicKey) => {
   if (isFalsey(companyId) || isFalsey(demographicKey)) return Promise.reject(`Passed - CompanyId: ${companyId}, demographicKey: ${demographicKey}`);
