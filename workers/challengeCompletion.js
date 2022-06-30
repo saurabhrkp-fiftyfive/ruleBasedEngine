@@ -26,7 +26,7 @@ const { updateUserLevelCompletion, updateUserLevel } = require('../functions/use
 (async () => {
   try {
     const event = {
-      jobId: 'e25332a2-fc26-4382-9578-c60671694e9f', status: 'pending', eventName: 'CHALLENGE_COMPLETED',
+      jobId: 'e25332a2-fc26-4382-9578-c60671694e9f', status: 'pending', eventName: 'CHALLENGE_ATTEMPT',
       eventMessage: { user_id: 108835, timespent: 60, challenge_id: 31138, completion: 'success', score: 120 }
     };
     const { user_id, challenge_id, completion, score } = event.eventMessage;

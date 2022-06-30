@@ -1,7 +1,7 @@
 require('dotenv').config();
 const Event = require('../models/events');
 
-const EVENT_NAME = 'CHALLENGE_COMPLETED';
+const EVENT_NAME = 'CHALLENGE_ATTEMPT';
 
 /**
  * Main Function call to start process
