@@ -7,6 +7,7 @@ const options = {
   host: process.env.DB_MSSQL_HOST ? process.env.DB_MSSQL_HOST : 'localhost',
   port: process.env.DB_MSSQL_PORT ? process.env.DB_MSSQL_PORT : '1443',
   dialect: process.env.DB_MSSQL_DIALECT ? process.env.DB_MSSQL_DIALECT : 'mssql',
+  logging: process.env.NODE_ENV === 'production' ? false : console.log
 };
 
 const mssqlConnection = new Sequelize(database, username, password, options);

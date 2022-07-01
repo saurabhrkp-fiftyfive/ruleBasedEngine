@@ -13,7 +13,7 @@ const DEFAULT_CRITERIA = {
 exports.createLevel = async (req, res, next) => {
   try {
     let { companyId, name, criteria } = req.body;
-    if (isFalsey(companyId) || isFalsey(name)) return sendResponse(res, 201, { message: 'Required fields are empty' });
+    if (isFalsey(companyId) || isFalsey(name)) return sendResponse(res, 400, { message: 'Required fields are empty' });
     let levelCriteria = { ...DEFAULT_CRITERIA, ...criteria };
     let level = { companyId, name, criteria: levelCriteria };
     await Level.create(level);
@@ -27,7 +27,7 @@ exports.createLevel = async (req, res, next) => {
 exports.addModulesToLevel = async (req, res, next) => {
   try {
     let { levelId, moduleIds, mandatoryModuleIds } = req.body;
-    if (isFalsey(levelId) || isFalsey(moduleIds)) return sendResponse(res, 201, { message: 'Required fields are empty' });
+    if (isFalsey(levelId) || isFalsey(moduleIds)) return sendResponse(res, 400, { message: 'Required fields are empty' });
     for (let moduleId of moduleIds) {
       let levelModule = { levelId, moduleId, mandatory: false };
       await LevelModuleMapping.create(levelModule);
@@ -48,9 +48,9 @@ exports.addModulesToLevel = async (req, res, next) => {
 exports.mapDemographicKeyToLevel = async (req, res, next) => {
   try {
     let { levelId, demographicKey, order } = req.body;
-    if (isFalsey(levelId) || isFalsey(demographicKey) || isFalsey(order)) return sendResponse(res, 201, { message: 'Required fields are empty' });
+    if (isFalsey(levelId) || isFalsey(demographicKey) || isFalsey(order)) return sendResponse(res, 400, { message: 'Required fields are empty' });
     let mappingFound = await DemographicKeyLevels.findAll({ where: { demographicKey, levelId, order, deleteFlag: false } });
-    if (mappingFound.length > 0) return sendResponse(res, 200, { message: 'Mapping found' });
+    if (mappingFound.length > 0) return sendResponse(res, 409, { message: 'Mapping found' });
     await DemographicKeyLevels.create({ levelId, demographicKey, order });
     return sendResponse(res, 200, { message: 'Inserted level DemographicKey Mapping successfully.' });
   } catch (error) {
@@ -62,9 +62,9 @@ exports.mapDemographicKeyToLevel = async (req, res, next) => {
 exports.mapUnlockLevelDependencies = async (req, res, next) => {
   try {
     let { unlockLevelId, dependentLevelId } = req.body;
-    if (isFalsey(unlockLevelId) || isFalsey(dependentLevelId)) return sendResponse(res, 201, { message: 'Required fields are empty' });
+    if (isFalsey(unlockLevelId) || isFalsey(dependentLevelId)) return sendResponse(res, 400, { message: 'Required fields are empty' });
     let mappingFound = await LevelUnlockDependencies.findAll({ where: { unlockLevelId, dependentLevelId, deleteFlag: false } });
-    if (mappingFound.length > 0) return sendResponse(res, 200, { message: 'Mapping found' });
+    if (mappingFound.length > 0) return sendResponse(res, 409, { message: 'Mapping found' });
     await LevelUnlockDependencies.create({ unlockLevelId, dependentLevelId });
     return sendResponse(res, 200, { message: 'Inserted level unlock dependency successfully.' });
   } catch (error) {

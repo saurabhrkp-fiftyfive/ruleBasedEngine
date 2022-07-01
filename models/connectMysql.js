@@ -5,9 +5,9 @@ const username = process.env.DB_MYSQL_USER ? process.env.DB_MYSQL_USER : 'root';
 const password = process.env.DB_MYSQL_PASSWORD ? process.env.DB_MYSQL_PASSWORD : 'root';
 const options = {
   host: process.env.DB_MYSQL_HOST ? process.env.DB_MYSQL_HOST : 'localhost',
-  dialect: process.env.DB_MYSQL_DIALECT ? process.env.DB_MYSQL_DIALECT : 'mysql'
+  dialect: process.env.DB_MYSQL_DIALECT ? process.env.DB_MYSQL_DIALECT : 'mysql',
+  logging: process.env.NODE_ENV === 'production' ? false : console.log
 };
-
 const mysqlConnection = new Sequelize(database, username, password, options);
 
 /** Test DB Connection is OK. */
