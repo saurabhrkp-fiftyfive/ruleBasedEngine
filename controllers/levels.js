@@ -27,7 +27,7 @@ exports.createLevel = async (req, res, next) => {
 exports.addModulesToLevel = async (req, res, next) => {
   try {
     let { levelId, moduleIds, mandatoryModuleIds } = req.body;
-    if (isFalsey(levelId) || isFalsey(moduleIds)) return sendResponse(res, 400, { message: 'Required fields are empty' });
+    if (isFalsey(levelId)) return sendResponse(res, 400, { message: 'Required fields are empty' });
     for (let moduleId of moduleIds) {
       let levelModule = { levelId, moduleId, mandatory: false };
       await LevelModuleMapping.create(levelModule);
