@@ -47,11 +47,11 @@ exports.addModulesToLevel = async (req, res, next) => {
 
 exports.mapDemographicKeyToLevel = async (req, res, next) => {
   try {
-    let { levelId, demographicKey, order } = req.body;
-    if (isFalsey(levelId) || isFalsey(demographicKey) || isFalsey(order)) return sendResponse(res, 400, { message: 'Required fields are empty' });
-    let mappingFound = await DemographicKeyLevels.findAll({ where: { demographicKey, levelId, order, deleteFlag: false } });
+    let { levelId, companyId, demographicKey, order } = req.body;
+    if (isFalsey(levelId) || isFalsey(demographicKey) || isFalsey(companyId) || isFalsey(order)) return sendResponse(res, 400, { message: 'Required fields are empty' });
+    let mappingFound = await DemographicKeyLevels.findAll({ where: { demographicKey, levelId, companyId, order, deleteFlag: false } });
     if (mappingFound.length > 0) return sendResponse(res, 409, { message: 'Mapping found' });
-    await DemographicKeyLevels.create({ levelId, demographicKey, order });
+    await DemographicKeyLevels.create({ levelId, companyId, demographicKey, order });
     return sendResponse(res, 200, { message: 'Inserted level DemographicKey Mapping successfully.' });
   } catch (error) {
     console.log(error);
