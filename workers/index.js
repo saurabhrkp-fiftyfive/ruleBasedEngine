@@ -3,6 +3,7 @@ const mysqlConnection = require('../models/connectMysql');
 const mssqlConnection = require('../models/connectMssql');
 const { getUserCompanyDemographicKey, getUserLevelsByDemographicKey, getModuleLevelByChallenge } = require('../functions');
 const { updateUserLevelCompletion, updateUserLevel } = require('../functions/userLevels');
+const { getLevelUnlockDependencies } = require('../functions/levelDependence');
 const { getUserCompletionsData } = require('../functions/completions');
 const { getAllModuleInLevel } = require('../functions/moduleLevel');
 const { getLevelDetails } = require('../functions/levels');
@@ -66,29 +67,27 @@ exports.challengeAttemptEventHandler = async (challengeAttempt) => {
   // If user has completed current level by criteria
   if (completionPercentageMet && mandatoryModulesCompleted) {
     console.log(`Level Completion Criteria met`);
-    // Get current level and its order from level details
-    const currentlevel = userLevelsByDemographicKey.find((row) => row.levelId === levelId);
-    showConsoleLogs && console.log({ currentlevel });
-    const currentlevelOrder = currentlevel.order;
+    // Check if user is already upgraded to next level
+    await updateUserLevel(mysqlConnection, user_id, levelId);
+    // Get levels from unlock dependencies of level
+    const unlockLevels = await getLevelUnlockDependencies(mysqlConnection, levelId);
+    showConsoleLogs && console.log({ unlockLevels });
     // Then fetch next level by order
-    const nextLevelByOrder = userLevelsByDemographicKey.find((row) => row.order > currentlevelOrder);
-    if (nextLevelByOrder === undefined) {
+    if (unlockLevels.length === 0) {
       console.log(`No next level, Completed Job`);
       return Promise.resolve();
     }
-    showConsoleLogs && console.log({ nextLevelByOrder });
-    let nextLevelId = nextLevelByOrder.levelId;
-    // Check if user is already upgraded to next level
-    await updateUserLevel(mysqlConnection, user_id, levelId);
-    const launchModule = await updateUserLevel(mysqlConnection, user_id, nextLevelId);
-    if (launchModule) {
-      // Get all modules in next level
-      const allModuleInNextLevel = await getAllModuleInLevel(mysqlConnection, [nextLevelId]);
-      showConsoleLogs && console.log({ allModuleInNextLevel });
-      // Get module Id to launch
-      const moduleIdsToLaunch = allModuleInNextLevel.map((module) => module.moduleId);
-      // Launch all modules to user
-      await launchModules(companyId, moduleIdsToLaunch, [userEmail]);
+    for (const unlockLevel of unlockLevels) {
+      const launchModule = await updateUserLevel(mysqlConnection, user_id, unlockLevel);
+      if (launchModule) {
+        // Get all modules in next level
+        const allModuleInNextLevel = await getAllModuleInLevel(mysqlConnection, [unlockLevel]);
+        showConsoleLogs && console.log({ allModuleInNextLevel });
+        // Get module Id to launch
+        const moduleIdsToLaunch = allModuleInNextLevel.map((module) => module.moduleId);
+        // Launch all modules to user
+        await launchModules(companyId, moduleIdsToLaunch, [userEmail]);
+      }
     }
   }
   console.log(`Completed Job`);
